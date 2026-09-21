@@ -1,14 +1,45 @@
-name: Publish dbt Context
+name: Publish dbt Platform Manifest
 
 on:
   workflow_dispatch:
-  push:
-    branches: [main]
+    inputs:
+      dbt_run_id:
+        description: "Successful dbt Platform production run ID"
+        required: true
 
 jobs:
   publish:
-    uses: dbt-labs/agents_schema/.github/workflows/agents-schema-dbt.yml@v0.0.11
-    with:
-      dbt-project-dir: .
-    secrets:
-      WAREHOUSE_CREDENTIALS: ${{ secrets.WAREHOUSE_CREDENTIALS }}
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          version: "latest"
+
+      - name: Download manifest.json from dbt Platform
+        env:
+          DBT_HOST: ${{ secrets.DBT_HOST }}
+          DBT_ACCOUNT_ID: ${{ secrets.DBT_ACCOUNT_ID }}
+          DBT_RUN_ID: ${{ inputs.dbt_run_id }}
+          DBT_TOKEN: ${{ secrets.DBT_TOKEN }}
+        run: |
+          mkdir -p dbt_project/target
+
+          curl --fail --location \
+            -H "Authorization: Token ${DBT_TOKEN}" \
+            -H "Content-Type: application/json" \
+            "${DBT_HOST}/api/v2/accounts/${DBT_ACCOUNT_ID}/runs/${DBT_RUN_ID}/artifacts/manifest.json" \
+            -o dbt_project/target/manifest.json
+
+          test -s dbt_project/target/manifest.json
+
+      - name: Publish dbt metadata to AGENTS
+        env:
+          WAREHOUSE_CREDENTIALS: ${{ secrets.WAREHOUSE_CREDENTIALS }}
+        run: |
+          uvx --from agents-schema==0.0.11 \
+            agents-schema dbt --project-dir dbt_project
