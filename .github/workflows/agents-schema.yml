@@ -27,19 +27,26 @@ jobs:
           DBT_RUN_ID: ${{ inputs.dbt_run_id }}
           DBT_TOKEN: ${{ secrets.DBT_TOKEN }}
         run: |
-          mkdir -p dbt_project/target
+          mkdir -p target
+
+          dbt_host="${DBT_HOST%/}"
+          if [[ "$dbt_host" == */api/v2 ]]; then
+            api_base="$dbt_host"
+          else
+            api_base="$dbt_host/api/v2"
+          fi
 
           curl --fail --location \
             -H "Authorization: Token ${DBT_TOKEN}" \
             -H "Content-Type: application/json" \
-            "${DBT_HOST}/api/v2/accounts/${DBT_ACCOUNT_ID}/runs/${DBT_RUN_ID}/artifacts/manifest.json" \
-            -o dbt_project/target/manifest.json
+            "${api_base}/accounts/${DBT_ACCOUNT_ID}/runs/${DBT_RUN_ID}/artifacts/manifest.json" \
+            -o target/manifest.json
 
-          test -s dbt_project/target/manifest.json
+          test -s target/manifest.json
 
       - name: Publish dbt metadata to AGENTS
         env:
           WAREHOUSE_CREDENTIALS: ${{ secrets.WAREHOUSE_CREDENTIALS }}
         run: |
           uvx --from agents-schema==0.0.11 \
-            agents-schema dbt --project-dir dbt_project
+            agents-schema dbt --project-dir .
