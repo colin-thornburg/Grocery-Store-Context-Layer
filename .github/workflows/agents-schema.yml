@@ -1,0 +1,14 @@
+name: Publish dbt Context
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+
+jobs:
+  publish:
+    uses: dbt-labs/agents_schema/.github/workflows/agents-schema-dbt.yml@v0.0.11
+    with:
+      dbt-project-dir: .
+    secrets:
+      WAREHOUSE_CREDENTIALS: ${{ secrets.WAREHOUSE_CREDENTIALS }}
