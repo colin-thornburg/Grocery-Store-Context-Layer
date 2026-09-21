@@ -27,19 +27,32 @@ jobs:
           DBT_RUN_ID: ${{ inputs.dbt_run_id }}
           DBT_TOKEN: ${{ secrets.DBT_TOKEN }}
         run: |
-          mkdir -p dbt_project/target
+          api_base="${DBT_HOST%/}"
+          api_base="${api_base%/api/v2}"
+          manifest_path="target/manifest.json"
+          manifest_url="${api_base}/api/v2/accounts/${DBT_ACCOUNT_ID}/runs/${DBT_RUN_ID}/artifacts/manifest.json"
+          temp_manifest="$(mktemp)"
 
-          curl --fail --location \
-            -H "Authorization: Token ${DBT_TOKEN}" \
-            -H "Content-Type: application/json" \
-            "${DBT_HOST}/api/v2/accounts/${DBT_ACCOUNT_ID}/runs/${DBT_RUN_ID}/artifacts/manifest.json" \
-            -o dbt_project/target/manifest.json
+          mkdir -p target
 
-          test -s dbt_project/target/manifest.json
+          for candidate_url in \
+            "${manifest_url}" \
+            "${manifest_url}?step=last"; do
+            if curl --fail --location \
+              -H "Authorization: Token ${DBT_TOKEN}" \
+              -H "Content-Type: application/json" \
+              "${candidate_url}" \
+              -o "${temp_manifest}"; then
+              mv "${temp_manifest}" "${manifest_path}"
+              break
+            fi
+          done
+
+          test -s "${manifest_path}"
 
       - name: Publish dbt metadata to AGENTS
         env:
           WAREHOUSE_CREDENTIALS: ${{ secrets.WAREHOUSE_CREDENTIALS }}
         run: |
           uvx --from agents-schema==0.0.11 \
-            agents-schema dbt --project-dir dbt_project
+            agents-schema dbt --project-dir .
