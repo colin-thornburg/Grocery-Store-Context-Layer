@@ -1,0 +1,57 @@
+version: 2
+
+models:
+  - name: stg_sales
+    description: Cleaned grocery sales transactions from the synthetic sales seed.
+    columns:
+      - name: sale_id
+        description: Unique identifier for a synthetic sales transaction.
+        data_tests:
+          - unique
+          - not_null
+
+  - name: stg_shrink
+    description: Cleaned grocery shrink transactions from the synthetic shrink seed.
+    columns:
+      - name: shrink_id
+        description: Unique identifier for a synthetic shrink transaction.
+        data_tests:
+          - unique
+          - not_null
+
+  - name: fct_produce_margin
+    description: >
+      Certified daily produce margin by store and product category.
+      Includes product cost and known shrink cost.
+    config:
+      meta:
+        owner: grocery-analytics
+        ai_context: >
+          Use this model for fresh-produce margin analysis.
+          Exclude test stores and compare complete local calendar weeks.
+    columns:
+      - name: store_id
+        description: Identifier for the grocery store.
+        data_tests:
+          - not_null
+      - name: product_category
+        description: Product category; this mart contains produce only.
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: ['produce']
+      - name: business_date
+        description: Local calendar date of the sales and shrink activity.
+        data_tests:
+          - not_null
+      - name: net_sales
+        description: Total produce sales before product and shrink costs.
+      - name: product_cost
+        description: Cost of the produce sold.
+      - name: shrink_cost
+        description: Recorded produce spoilage and inventory adjustment cost.
+      - name: gross_margin
+        description: >
+          Net sales minus product cost and known shrink cost,
+          divided by net sales.

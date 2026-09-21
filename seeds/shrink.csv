@@ -1,0 +1,11 @@
+shrink_id,store_id,product_category,business_date,shrink_cost
+1,101,produce,2025-01-06,8.00
+2,101,produce,2025-01-06,2.00
+3,102,produce,2025-01-06,12.00
+4,101,produce,2025-01-07,7.00
+5,102,produce,2025-01-07,9.00
+6,103,produce,2025-01-07,5.00
+7,101,grocery,2025-01-06,3.00
+8,102,bakery,2025-01-06,2.50
+9,103,produce,2025-01-08,6.00
+10,103,dairy,2025-01-08,4.00
